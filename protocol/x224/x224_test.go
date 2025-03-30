@@ -1,9 +1,11 @@
 package x224
 
 import (
+	"fmt"
 	"net"
 	"rdp_channel/protocol/tpkt"
 	"testing"
+	"time"
 )
 
 func TestX224(t *testing.T) {
@@ -27,18 +29,15 @@ func runServer(t *testing.T) {
 		go func(conn net.Conn) {
 			defer conn.Close()
 
-			transport := tpkt.New(conn)
-			x224 := New(transport)
+			tpkt := tpkt.New(conn)
+			x224 := New(tpkt)
 
-			_, packet, err := x224.Read()
-			if err != nil {
-				t.Fatal(err)
-			}
+			x224.OnData(func(bytes []byte) {
+				fmt.Printf("server received: %s\n", string(bytes))
+				x224.Write([]byte("yes! server hear!"))
+			})
 
-			err = x224.handleConnectionRequest(packet)
-			if err != nil {
-				t.Fatal(err)
-			}
+			x224.serverHandleClientMessage()
 		}(conn)
 	}
 }
@@ -50,11 +49,16 @@ func runClient(t *testing.T) {
 	}
 	defer conn.Close()
 
-	transport := tpkt.New(conn)
-	x224 := New(transport)
+	tpkt := tpkt.New(conn)
+	x224 := New(tpkt)
 
-	err = x224.ConnectToServer()
-	if err != nil {
-		t.Fatal(err)
+	x224.ConnectToServer()
+	x224.OnData(func(bytes []byte) {
+		fmt.Printf("client received: %s\n", string(bytes))
+	})
+
+	for {
+		time.Sleep(1 * time.Second)
+		x224.Write([]byte("this is client!"))
 	}
 }
