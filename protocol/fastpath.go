@@ -134,7 +134,7 @@ func (f *FastPath) Write(payload []byte) error {
 }
 
 /*
-	FastParh解包
+	FastPath解包
 */
 
 func (f *FastPath) Read() (payload []byte, err error) {
